@@ -302,8 +302,6 @@ function makeStats(t, setsWon, setsLost){
   const targetKillsPerSet=13.8+(Math.random()-.5)*3.0;
   const targetKills=Math.max(sets*12,Math.min(sets*16,Math.round(targetKillsPerSet*sets)));
 
-  // Team hitting percentage varies by team quality and opponent, but is not forced.
-  const teamHittingBase=.255+(t.rating-85)*.0012+(Math.random()-.5)*.035;
 
   // Allocate kills by offensive role. One or two primary attackers should
   // normally carry noticeably more of the offense than the rest of the lineup.
@@ -369,34 +367,6 @@ function makeStats(t, setsWon, setsLost){
         p.kills+p.errors+1,
         Math.round((p.kills-p.errors)/Math.max(.10,eff))
       );
-    }
-  });
-
-  // Correct total to the requested team kill range using primary attackers.
-  assigned=attackers.reduce((n,p)=>n+p.kills,0);
-  let diff=targetKills-assigned;
-  const correctionOrder=[...opp,...oh,...mb];
-  let idx=0;
-  while(diff!==0 && correctionOrder.length){
-    const p=correctionOrder[idx%correctionOrder.length];
-    if(diff>0){p.kills++;diff--;}
-    else if(p.kills>0){p.kills--;diff++;}
-    idx++;
-    if(idx>1000)break;
-  }
-
-  // Determine attempts/errors from the position-specific hitting benchmarks.
-  attackers.forEach(p=>{
-    const eff=chooseEfficiency(p);
-    // More efficient players need fewer errors for the same kill volume.
-    const errorRate=p.type==="MB"?.075:(p.type==="OPP"?.095:.105);
-    p.errors=Math.max(0,Math.round(p.kills*(errorRate/.22)*(0.8+Math.random()*.5)));
-    // Make enough attempts to land at the desired efficiency.
-    p.attempts=Math.max(p.kills+p.errors+1,Math.round(p.kills/Math.max(.12,eff)+p.errors));
-    // Recalculate the actual efficiency and gently correct attempts.
-    const actual=(p.kills-p.errors)/p.attempts;
-    if(Math.abs(actual-eff)>.045){
-      p.attempts=Math.max(p.kills+p.errors+1,Math.round((p.kills-p.errors)/Math.max(.10,eff)));
     }
   });
 
