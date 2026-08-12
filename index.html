@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>College Volleyball Simulator — Version 1</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --navy:#10233f;--blue:#1d4ed8;--gold:#f4b400;--bg:#f4f7fb;
+  --card:#fff;--text:#172033;--muted:#667085;--line:#dfe5ee;
+  --green:#16803c;--red:#c62828;
+}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,select{font:inherit}
+.topbar{background:linear-gradient(135deg,var(--navy),#1c3963);color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;gap:20px;position:sticky;top:0;z-index:10}
+.brand{font-weight:900;font-size:22px;letter-spacing:.3px}.brand span{color:#8fb7ff}
+.season{font-size:13px;opacity:.85}
+.wrap{max-width:1180px;margin:auto;padding:24px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.nav button{border:1px solid var(--line);background:#fff;color:var(--navy);padding:10px 15px;border-radius:10px;font-weight:800;cursor:pointer}
+.nav button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.page{display:none}.page.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 3px 12px rgba(16,35,63,.05)}
+.span12{grid-column:span 12}.span8{grid-column:span 8}.span6{grid-column:span 6}.span4{grid-column:span 4}
+h1,h2,h3{margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px}
+.hero{background:linear-gradient(135deg,#10233f,#24508d);color:#fff;border-radius:18px;padding:24px}
+.hero h1{font-size:30px}.hero .record{opacity:.85;margin-top:5px}
+.team-select{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.btn{border:0;border-radius:10px;padding:12px 17px;font-weight:900;cursor:pointer}
+.btn.primary{background:var(--blue);color:#fff}.btn.dark{background:var(--navy);color:#fff}.btn.light{background:#edf2f8;color:var(--navy)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.team-card{display:flex;align-items:center;gap:14px}
+.logo{width:58px;height:48px;border-radius:12px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px;letter-spacing:.2px}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}
+.stat{background:#f7f9fc;border-radius:12px;padding:12px}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}.table th{font-size:12px;text-transform:uppercase;color:var(--muted)}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2ff;color:#244db3;font-size:11px;font-weight:900}
+.badge.green{background:#e8f7ee;color:var(--green)}.badge.red{background:#fdecec;color:var(--red)}
+.roster-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.player{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;justify-content:space-between;gap:10px}
+.player .name{font-weight:900}.rating{font-weight:900;font-size:20px;color:var(--blue)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{flex:1;min-width:220px}
+.field label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px}
+.matchbox{display:grid;grid-template-columns:1fr 110px 1fr;gap:12px;align-items:center;text-align:center}
+.team-side{padding:18px;border:1px solid var(--line);border-radius:15px;background:#fafcff}.team-side h2{font-size:20px}
+.score{font-size:38px;font-weight:1000;color:var(--navy)}
+.sets{margin-top:14px;font-size:13px;color:var(--muted)}
+.live{background:#0d1727;color:#fff;border-radius:16px;padding:18px;margin-top:15px;min-height:130px}
+.point{font-size:18px;font-weight:900;margin-bottom:8px}.log{font-size:13px;opacity:.85;max-height:120px;overflow:auto}
+.result{border-left:5px solid var(--blue);padding:12px;background:#f8faff;border-radius:8px;margin:8px 0}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.footer{margin:30px 0 10px;color:var(--muted);font-size:12px;text-align:center}
+@media(max-width:800px){.span8,.span6,.span4{grid-column:span 12}.team-select,.roster-grid{grid-template-columns:1fr}.statgrid{grid-template-columns:repeat(2,1fr)}.matchbox{grid-template-columns:1fr}.score{font-size:32px}.topbar{padding:16px}.wrap{padding:14px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🏐 College Volleyball <span>Simulator</span></div>
+  <div class="season">VERSION 1 • 2026 SEASON</div>
+</header>
+
+<main class="wrap">
+  <div class="nav">
+    <button class="active" data-page="home">Dashboard</button>
+    <button data-page="teams">Teams</button>
+    <button data-page="roster">Roster</button>
+    <button data-page="match">Play Match</button>
+    <button data-page="history">History</button>
+  </div>
+
+  <section id="home" class="page active">
+    <div class="hero">
+      <h1 id="dashTitle">Choose your team</h1>
+      <div class="record" id="dashRecord">Your Version 1 career starts here.</div>
+      <div class="actions"><button class="btn primary" onclick="go('teams')">Choose Team</button><button class="btn light" onclick="go('match')">Simulate Match</button></div>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <div class="card span8">
+        <h2>Next Match</h2>
+        <div id="nextMatch" class="empty">Choose a team to begin.</div>
+      </div>
+      <div class="card span4">
+        <h2>Season Stats</h2>
+        <div class="statgrid">
+          <div class="stat"><b id="wins">0</b><span>Wins</span></div>
+          <div class="stat"><b id="losses">0</b><span>Losses</span></div>
+          <div class="stat"><b id="setsWon">0</b><span>Sets Won</span></div>
+          <div class="stat"><b id="setsLost">0</b><span>Sets Lost</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Recent Results</h2><div id="recentResults" class="empty">No matches played yet.</div>
+    </div>
+  </section>
+
+  <section id="teams" class="page">
+    <div class="card">
+      <h1>Choose Your College</h1>
+      <p class="muted">Version 1 uses real 2026 NCAA women's volleyball programs. Each team now uses its school color and a 2–4 letter abbreviation. Player ratings are simulator ratings for gameplay, not official NCAA ratings.</p>
+      <div class="team-select">
+        <div><label class="small">Your Team</label><select id="teamPicker"></select></div>
+        <div style="display:flex;align-items:end"><button class="btn primary" onclick="setTeam()">Set as My Team</button></div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:16px" id="teamCards"></div>
+  </section>
+
+  <section id="roster" class="page">
+    <div class="card">
+      <div id="rosterHeader"></div>
+      <div class="statgrid" id="rosterStats"></div>
+      <h2 style="margin-top:22px">Roster</h2><p class="muted small">Position matters in the match engine: setters are assist-first players, middles get efficient but lower-volume attacks, OH/OPP players carry most of the attack volume, and liberos/DS players are defensive specialists.</p>
+      <div id="rosterList" class="roster-grid"></div>
+    </div>
+  </section>
+
+  <section id="match" class="page">
+    <div class="card">
+      <h1>Play Match</h1><div class="card" style="margin:12px 0;background:#f8faff"><b>V1 Statistical Targets</b><br><span class="small muted">Teams: 12–16 kills/set • Setters: 9–13 assists/set, usually 9–11 • MB: .280–.430+ • OH: .200–.320+ • OPP: .210–.330+</span></div>
+      <p class="muted">The engine simulates every rally using team strength, offense, defense, serving, blocking, and a small randomness factor. Box scores use position-based production so setters primarily record assists, middles emphasize blocking/efficiency, and liberos/DS players focus on passing and digs.</p>
+      <div class="controls">
+        <div class="field"><label>Your Team</label><select id="homePicker"></select></div>
+        <div class="field"><label>Opponent</label><select id="awayPicker"></select></div>
+        <div><button class="btn primary" onclick="playMatch()">SIMULATE MATCH</button></div>
+      </div>
+      <div id="matchOutput" style="margin-top:20px"></div>
+    </div>
+  </section>
+
+  <section id="history" class="page">
+    <div class="card">
+      <h1>Match History</h1>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <div class="footer">College Volleyball Simulator V1 • Real team/player names are used for simulation; gameplay ratings are illustrative.</div>
+</main>
+
+<script>
+const teams = {
+  wisconsin:{name:"Wisconsin",abbr:"WIS",color:"#C5050C",text:"#FFFFFF",school:"Wisconsin Badgers",conf:"Big Ten",rating:94,off:95,def:94,serve:91,block:94,setting:95,
+    players:[
+      ["Charlie Fuerbringer","S",96],["Jaela Auguste","MB",93],["Grace Egan","OH",88],["Audrey Flanagan","OH",87],["Eva Travis","OH",90],["Madison Quest","OH",89],["Grace Lopez","RS",86],["Jane Manecke","MB",85],["Natalie Wardlow","MB",84],["Morgan Van Wie","S",82],["Kristen Simon","L/DS",86],["Anna Bardaro","L/DS",80]
+    ]},
+  nebraska:{name:"Nebraska",abbr:"NEB",color:"#D00000",text:"#FFFFFF",school:"Nebraska Cornhuskers",conf:"Big Ten",rating:96,off:97,def:96,serve:94,block:95,setting:96,
+    players:[
+      ["Bergen Reilly","S",97],["Harper Murray","OH",97],["Andi Jackson","MB",96],["Laney Choboy","L",95],["Virginia Adriano","OPP",91],["Teraya Sigler","OH",90],["Manaia Ogbechie","MB",89],["Keoni Williams","MB",87],["Campbell Flynn","S",84]
+    ]},
+  stanford:{name:"Stanford",abbr:"STAN",color:"#8C1515",text:"#FFFFFF",school:"Stanford Cardinal",conf:"ACC",rating:92,off:93,def:94,serve:91,block:92,setting:93,
+    players:[
+      ["Sarah Hickman","OPP",91],["Joy Udoye","OH",91],["Jordyn Harvey","OPP",88],["Koko Kirsch","DS",89],["Julia Blyashov","OH",94],["Sidney Duncan","MB",90],["Spencer Etzler","L",88]
+    ]},
+  louisville:{name:"Louisville",abbr:"LOU",color:"#AD0000",text:"#FFFFFF",school:"Louisville Cardinals",conf:"ACC",rating:93,off:95,def:91,serve:94,block:92,setting:92,
+    players:[
+      ["Chloe Meester","OH",88],["Kamden Schrand","L",90],["Addison Makun","MB",88],["Amirra Bailey","MB",82],["Hannah Kenny","S/L",83],["Chloe Chicoine","OH",94],["Nayelis Cabello","S",91],["Jordyn Gray","OH",83]
+    ]},
+  texas:{name:"Texas",abbr:"TEX",color:"#BF5700",text:"#FFFFFF",school:"Texas Longhorns",conf:"SEC",rating:95,off:97,def:94,serve:94,block:96,setting:94,
+    players:[
+      ["Henley Anderson","OPP/OH",91],["Genevieve Harris","S",90],["Taylor Harvey","MB",89],["Abby Vander Wal","OH",92],["Ramsey Gary","L",91],["Payton Petersen","OH",88]
+    ]},
+  pitt:{name:"Pittsburgh",abbr:"PITT",color:"#003594",text:"#FFFFFF",school:"Pittsburgh Panthers",conf:"ACC",rating:94,off:96,def:94,serve:93,block:95,setting:95,
+    players:[
+      ["Blaire Bayless","OH",91],["Abbey Emch","MB",93],["Ayanna Watson","OH",90],["Peyton Kubik","OH",89]
+    ]},
+  minnesota:{name:"Minnesota",abbr:"MINN",color:"#7A0019",text:"#FFFFFF",school:"Minnesota Golden Gophers",conf:"Big Ten",rating:90,off:91,def:93,serve:90,block:90,setting:91,
+    players:[
+      ["Carly Gilk","OPP",88],["Jordan Taylor","MB",89]
+    ]},
+  marquette:{name:"Marquette",abbr:"MARQ",color:"#003DA5",text:"#FFFFFF",school:"Marquette Golden Eagles",conf:"Big East",rating:85,off:87,def:85,serve:86,block:83,setting:85,
+    players:[
+      ["Natalie Ring","OH",88]
+    ]}
+};
+
+let state = JSON.parse(localStorage.getItem("cvs_v1") || "null") || {
+  myTeam:null, record:{}, history:[]
+};
+
+function save(){localStorage.setItem("cvs_v1",JSON.stringify(state));}
+function go(page){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
+  document.getElementById(page).classList.add("active");
+  document.querySelector(`[data-page="${page}"]`).classList.add("active");
+  render();
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+function options(id, includeNone=false){
+  const s=document.getElementById(id); if(!s)return;
+  s.innerHTML=(includeNone?'<option value="">Select team...</option>':'')+
+    Object.entries(teams).map(([k,t])=>`<option value="${k}">${t.name} • ${t.rating} OVR</option>`).join("");
+}
+function setTeam(){
+  const k=document.getElementById("teamPicker").value;
+  if(!k)return;
+  state.myTeam=k;
+  if(!state.record[k])state.record[k]={w:0,l:0,sw:0,sl:0};
+  save(); render(); alert(`${teams[k].name} is now your team!`);
+}
+function render(){
+  options("teamPicker"); options("homePicker"); options("awayPicker");
+  if(state.myTeam){
+    document.getElementById("teamPicker").value=state.myTeam;
+    document.getElementById("homePicker").value=state.myTeam;
+  }
+  const me=state.myTeam?teams[state.myTeam]:null, r=state.myTeam?(state.record[state.myTeam]||{w:0,l:0,sw:0,sl:0}):{w:0,l:0,sw:0,sl:0};
+  document.getElementById("dashTitle").textContent=me?`${me.name} Volleyball`:"Choose your team";
+  document.getElementById("dashRecord").textContent=me?`${r.w}-${r.l} • ${me.conf} • ${me.rating} OVR`:"Your Version 1 career starts here.";
+  ["wins","losses","setsWon","setsLost"].forEach((id,i)=>document.getElementById(id).textContent=[r.w,r.l,r.sw,r.sl][i]);
+  document.getElementById("teamCards").innerHTML=Object.entries(teams).map(([k,t])=>`
+    <div class="card span4"><div class="team-card"><div class="logo" style="background:${t.color};color:${t.text}">${t.abbr}</div><div><h3>${t.name}</h3><div class="muted">${t.conf}</div></div></div>
+    <div class="statgrid"><div class="stat"><b>${t.rating}</b><span>OVR</span></div><div class="stat"><b>${t.off}</b><span>OFF</span></div><div class="stat"><b>${t.def}</b><span>DEF</span></div><div class="stat"><b>${t.block}</b><span>BLOCK</span></div></div></div>`).join("");
+  renderRoster(me); renderHistory();
+  if(me){
+    const opp=Object.entries(teams).filter(([k])=>k!==state.myTeam).sort((a,b)=>b[1].rating-a[1].rating)[0][1];
+    document.getElementById("nextMatch").innerHTML=`<div class="team-card"><div class="logo" style="background:${opp.color};color:${opp.text}">${opp.abbr}</div><div><h3>${me.name} vs ${opp.name}</h3><div class="muted">Non-conference • simulated schedule placeholder</div></div></div>`;
+  }
+}
+function renderRoster(me){
+  if(!me){document.getElementById("rosterHeader").innerHTML="<div class='empty'>Choose a team first.</div>";document.getElementById("rosterList").innerHTML="";return;}
+  document.getElementById("rosterHeader").innerHTML=`<h1>${me.school}</h1><p class="muted">${me.conf} • Team OVR ${me.rating}</p>`;
+  document.getElementById("rosterStats").innerHTML=[["OFF",me.off],["DEF",me.def],["SERVE",me.serve],["BLOCK",me.block]].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span></div>`).join("");
+  document.getElementById("rosterList").innerHTML=me.players.map((p,i)=>`<div class="player"><div><div class="name">${p[0]}</div><span class="badge">${p[1]}</span></div><div class="rating">${p[2]}</div></div>`).join("");
+}
+function weightedStrength(t){
+  return t.rating*.30+t.off*.20+t.def*.18+t.serve*.10+t.block*.12+t.setting*.10;
+}
+function normal(mu=0,sd=1){
+  let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return mu+sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function rally(a,b){
+  const diff=weightedStrength(a)-weightedStrength(b);
+  let p=.5+diff*.012+normal(0,.035);
+  p=Math.max(.18,Math.min(.82,p));
+  return Math.random()<p ? 0:1;
+}
+function playSet(a,b){
+  let sa=0,sb=0,log=[],server=Math.random()<.5?0:1;
+  while(true){
+    const win=rally(a,b);
+    if(win===0)sa++;else sb++;
+    if(sa>=25&&sa-sb>=2 || sb>=25&&sb-sa>=2)break;
+    if(sa>=29||sb>=29)break;
+  }
+  return {a:sa,b:sb};
+}
+function topPlayers(t, key){
+  const sorted=[...t.players].sort((x,y)=>y[2]-x[2]);
+  return sorted.slice(0,4);
+}
+function positionType(pos){
+  const p=pos.toUpperCase();
+  if(p.includes("S") && !p.includes("DS")) return "S";
+  if(p.includes("L")) return "L";
+  if(p.includes("MB")) return "MB";
+  if(p.includes("OPP") || p.includes("RS")) return "OPP";
+  if(p.includes("OH")) return "OH";
+  if(p.includes("DS")) return "DS";
+  return "OH";
+}
+
+
+function chooseEfficiency(p){
+  // Position-specific hitting benchmarks:
+  // MB: .280-.330 OK, .330-.370 good, .370-.430 great, .430+ elite
+  // OH: .200-.230 OK, .230-.270 good, .270-.320 great, .320+ elite
+  // OPP: .210-.250 OK, .250-.290 good, .290-.330 great, .330+ elite
+  let base;
+  if(p.type==="MB") base=.345;
+  else if(p.type==="OPP") base=.275;
+  else if(p.type==="OH") base=.250;
+  else base=.200;
+
+  const skill=(p.rating-85)*.0020;
+  const matchVariance=(Math.random()-.5)*.065;
+  return Math.max(.12,Math.min(.47,base+skill+matchVariance));
+}
+
+function makeStats(t, setsWon, setsLost){
+  const sets=Math.max(1,setsWon+setsLost);
+  const teamPoints=setsWon*25+setsLost*23;
+  const players=t.players.map(p=>({
+    name:p[0],pos:p[1],rating:p[2],type:positionType(p[1]),
+    kills:0,attempts:0,errors:0,assists:0,blocks:0,aces:0,
+    serviceErrors:0,digs:0,receptions:0,receptionErrors:0
+  }));
+
+  const attackers=players.filter(p=>["OH","OPP","MB"].includes(p.type));
+  const oh=players.filter(p=>p.type==="OH");
+  const opp=players.filter(p=>p.type==="OPP");
+  const mb=players.filter(p=>p.type==="MB");
+  const setter=players.find(p=>p.type==="S");
+
+  // Team kill target: 12–16 kills per set, with natural match-to-match variation.
+  const targetKillsPerSet=13.8+(Math.random()-.5)*3.0;
+  const targetKills=Math.max(sets*12,Math.min(sets*16,Math.round(targetKillsPerSet*sets)));
+
+  // Team hitting percentage varies by team quality and opponent, but is not forced.
+  const teamHittingBase=.255+(t.rating-85)*.0012+(Math.random()-.5)*.035;
+
+  // Allocate kills by offensive role. One or two primary attackers should
+  // normally carry noticeably more of the offense than the rest of the lineup.
+  const primaryOH = oh.slice().sort((a,b)=>b.rating-a.rating)[0];
+  const secondaryOH = oh.slice().sort((a,b)=>b.rating-a.rating)[1];
+  const primaryOPP = opp.slice().sort((a,b)=>b.rating-a.rating)[0];
+  const primaryMB = mb.slice().sort((a,b)=>b.rating-a.rating)[0];
+
+  const roleTargets = [];
+  if(primaryOH) roleTargets.push({p:primaryOH, share:.27});
+  if(primaryOPP) roleTargets.push({p:primaryOPP, share:.25});
+  if(secondaryOH) roleTargets.push({p:secondaryOH, share:.15});
+  if(primaryMB) roleTargets.push({p:primaryMB, share:.11});
+
+  // Remaining attackers split the remaining ~22% according to rating.
+  const already = roleTargets.reduce((n,x)=>n+x.share,0);
+  const remaining = attackers.filter(p=>!roleTargets.some(x=>x.p===p));
+  const remainingShare = Math.max(0, .90-already);
+  const remainingWeight = remaining.reduce((n,p)=>n+Math.max(1,p.rating),0);
+
+  remaining.forEach(p=>{
+    roleTargets.push({
+      p:p,
+      share:remainingWeight ? remainingShare*Math.max(1,p.rating)/remainingWeight : 0
+    });
+  });
+
+  let assigned=0;
+  roleTargets.forEach((r,i)=>{
+    const target=Math.round(targetKills*r.share);
+    r.p.kills=target;
+    assigned+=target;
+  });
+
+  // Correct rounding so the team lands exactly on its target kill total.
+  let diff=targetKills-assigned;
+  const correctionOrder=[
+    primaryOH,primaryOPP,secondaryOH,
+    ...remaining,primaryMB
+  ].filter(Boolean);
+
+  let ci=0;
+  while(diff!==0 && correctionOrder.length){
+    const p=correctionOrder[ci%correctionOrder.length];
+    if(diff>0){p.kills++;diff--;}
+    else if(p.kills>0){p.kills--;diff++;}
+    ci++;
+    if(ci>1000)break;
+  }
+
+  // Determine attempts/errors from the position-specific hitting benchmarks.
+  attackers.forEach(p=>{
+    const eff=chooseEfficiency(p);
+    const errorRate=p.type==="MB"?.075:(p.type==="OPP"?.095:.105);
+    p.errors=Math.max(0,Math.round(p.kills*(errorRate/.22)*(0.8+Math.random()*.5)));
+    p.attempts=Math.max(
+      p.kills+p.errors+1,
+      Math.round(p.kills/Math.max(.12,eff)+p.errors)
+    );
+    const actual=(p.kills-p.errors)/p.attempts;
+    if(Math.abs(actual-eff)>.045){
+      p.attempts=Math.max(
+        p.kills+p.errors+1,
+        Math.round((p.kills-p.errors)/Math.max(.10,eff))
+      );
+    }
+  });
+
+  // Correct total to the requested team kill range using primary attackers.
+  assigned=attackers.reduce((n,p)=>n+p.kills,0);
+  let diff=targetKills-assigned;
+  const correctionOrder=[...opp,...oh,...mb];
+  let idx=0;
+  while(diff!==0 && correctionOrder.length){
+    const p=correctionOrder[idx%correctionOrder.length];
+    if(diff>0){p.kills++;diff--;}
+    else if(p.kills>0){p.kills--;diff++;}
+    idx++;
+    if(idx>1000)break;
+  }
+
+  // Determine attempts/errors from the position-specific hitting benchmarks.
+  attackers.forEach(p=>{
+    const eff=chooseEfficiency(p);
+    // More efficient players need fewer errors for the same kill volume.
+    const errorRate=p.type==="MB"?.075:(p.type==="OPP"?.095:.105);
+    p.errors=Math.max(0,Math.round(p.kills*(errorRate/.22)*(0.8+Math.random()*.5)));
+    // Make enough attempts to land at the desired efficiency.
+    p.attempts=Math.max(p.kills+p.errors+1,Math.round(p.kills/Math.max(.12,eff)+p.errors));
+    // Recalculate the actual efficiency and gently correct attempts.
+    const actual=(p.kills-p.errors)/p.attempts;
+    if(Math.abs(actual-eff)>.045){
+      p.attempts=Math.max(p.kills+p.errors+1,Math.round((p.kills-p.errors)/Math.max(.10,eff)));
+    }
+  });
+
+  // Setters: 9–13 assists/set, normally toward 9–11.
+  if(setter){
+    const assistRate=9.8+(Math.random()-.5)*2.4;
+    setter.assists=Math.max(sets*9,Math.min(sets*13,Math.round(assistRate*sets)));
+    setter.attempts=Math.round(sets*(.35+Math.random()*.35));
+    setter.kills=Math.random()<.72 ? Math.min(setter.attempts,Math.round(sets*(.35+Math.random()*.35))) : 0;
+    setter.errors=setter.kills>0 && Math.random()<.22 ? 1 : 0;
+  }
+
+  // Liberos and DS players do not contribute attack kills in normal rotation.
+  players.forEach(p=>{
+    if(p.type==="L"||p.type==="DS"){
+      p.kills=0;p.attempts=0;p.errors=0;
+    }
+  });
+
+  // Blocks.
+  players.forEach(p=>{
+    if(p.type==="MB")p.blocks=Math.max(0,Math.round(sets*(.55+Math.random()*.75)));
+    else if(p.type==="OPP")p.blocks=Math.max(0,Math.round(sets*(.25+Math.random()*.45)));
+    else if(p.type==="OH")p.blocks=Math.max(0,Math.round(sets*(.10+Math.random()*.28)));
+    else if(p.type==="S")p.blocks=Math.random()<.35?1:0;
+  });
+
+  // Serving.
+  players.forEach(p=>{
+    if(p.type==="L")return;
+    const chances=Math.max(sets*2,Math.round(teamPoints*.075));
+    const aceRate=p.type==="S"?.055:.06;
+    p.aces=Math.max(0,Math.round(chances*aceRate*(.75+Math.random()*.5)));
+    p.serviceErrors=Math.max(0,Math.round(chances*(.045+Math.random()*.035)));
+  });
+
+  // Defense / passing.
+  players.forEach(p=>{
+    if(p.type==="L"){
+      p.receptions=Math.round(teamPoints*(.28+Math.random()*.08));
+      p.receptionErrors=Math.max(0,Math.round(p.receptions*(.025+Math.random()*.025)));
+      p.digs=Math.round(teamPoints*(.14+Math.random()*.055));
+    }else if(p.type==="DS"){
+      p.receptions=Math.round(teamPoints*(.16+Math.random()*.05));
+      p.receptionErrors=Math.max(0,Math.round(p.receptions*(.035+Math.random()*.03)));
+      p.digs=Math.round(teamPoints*(.075+Math.random()*.035));
+    }else if(p.type==="OH"){
+      p.receptions=Math.round(teamPoints*(.10+Math.random()*.04));
+      p.receptionErrors=Math.max(0,Math.round(p.receptions*(.045+Math.random()*.03)));
+      p.digs=Math.round(teamPoints*(.06+Math.random()*.035));
+    }else if(p.type==="S"){
+      p.digs=Math.round(teamPoints*(.035+Math.random()*.025));
+    }else if(p.type==="OPP"){
+      p.digs=Math.round(teamPoints*(.025+Math.random()*.02));
+    }
+  });
+
+  return players.filter(p=>p.kills+p.assists+p.blocks+p.aces+p.digs+p.receptions>0);
+}
+
+function formatHitting(kills, errors, attempts){
+  if(!attempts)return "—";
+  const value=(kills-errors)/attempts;
+  return value.toFixed(3).replace(/^0\./,".").replace(/^-0\./,"-.");
+}
+
+function statsTable(s){
+ return `<table class="table">
+ <tr><th>Player</th><th>K</th><th>ATT</th><th>E</th><th>H%</th><th>A</th><th>BLK</th><th>ACE</th><th>DIG</th></tr>
+ ${s.map(x=>`<tr>
+ <td><b>${x.name}</b><br><span class="small">${x.pos}</span></td>
+ <td>${x.kills}</td><td>${x.attempts}</td><td>${x.errors}</td>
+ <td>${formatHitting(x.kills,x.errors,x.attempts)}</td>
+ <td>${x.assists||0}</td><td>${x.blocks}</td><td>${x.aces}</td><td>${x.digs}</td>
+ </tr>`).join("")}</table>`;
+}
+
+function teamBoxSummary(s){
+  const k=s.reduce((n,x)=>n+x.kills,0);
+  const e=s.reduce((n,x)=>n+x.errors,0);
+  const a=s.reduce((n,x)=>n+x.attempts,0);
+  const assists=s.reduce((n,x)=>n+(x.assists||0),0);
+  const blocks=s.reduce((n,x)=>n+x.blocks,0);
+  const aces=s.reduce((n,x)=>n+x.aces,0);
+  const digs=s.reduce((n,x)=>n+x.digs,0);
+  const serviceErrors=s.reduce((n,x)=>n+x.serviceErrors,0);
+  const receptions=s.reduce((n,x)=>n+x.receptions,0);
+  const receptionErrors=s.reduce((n,x)=>n+x.receptionErrors,0);
+
+  return `<div style="margin-top:12px">
+    <h3 style="margin:0 0 8px">Team Statistics</h3>
+    <table class="table">
+      <tr><th>K</th><th>ATT</th><th>E</th><th>H%</th><th>A</th><th>BLK</th><th>ACE</th><th>SE</th><th>DIG</th><th>REC</th><th>RE</th></tr>
+      <tr>
+        <td><b>${k}</b></td><td>${a}</td><td>${e}</td><td><b>${formatHitting(k,e,a)}</b></td>
+        <td>${assists}</td><td>${blocks}</td><td>${aces}</td><td>${serviceErrors}</td>
+        <td>${digs}</td><td>${receptions}</td><td>${receptionErrors}</td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+function playMatch(){
+  const homeEl=document.getElementById("homePicker");
+  const awayEl=document.getElementById("awayPicker");
+  if(!homeEl || !awayEl){
+    alert("The team selectors could not be found.");
+    return;
+  }
+
+  const ak=homeEl.value;
+  const bk=awayEl.value;
+
+  if(!ak || !bk || ak===bk){
+    alert("Choose two different teams.");
+    return;
+  }
+
+  const a=teams[ak];
+  const b=teams[bk];
+
+  if(!a || !b){
+    alert("One of the selected teams could not be loaded.");
+    return;
+  }
+
+  let aw=0,bw=0,sets=[];
+
+  while(aw<3 && bw<3){
+    const s=playSet(a,b);
+    sets.push(s);
+    if(s.a>s.b) aw++;
+    else bw++;
+  }
+
+  const winner=aw>bw?a:b;
+
+  if(!state.record[ak]) state.record[ak]={w:0,l:0,sw:0,sl:0};
+  if(!state.record[bk]) state.record[bk]={w:0,l:0,sw:0,sl:0};
+
+  state.record[ak].sw+=aw;
+  state.record[ak].sl+=bw;
+  state.record[bk].sw+=bw;
+  state.record[bk].sl+=aw;
+
+  if(winner===a) state.record[ak].w++;
+  else state.record[ak].l++;
+
+  if(winner===b) state.record[bk].w++;
+  else state.record[bk].l++;
+
+  const statsA=makeStats(a,aw,bw);
+  const statsB=makeStats(b,bw,aw);
+
+  const match={
+    date:new Date().toLocaleString(),
+    a:ak,b:bk,aw,bw,sets,statsA,statsB
+  };
+
+  state.history.unshift(match);
+  state.history=state.history.slice(0,30);
+  save();
+
+  const output=document.getElementById("matchOutput");
+  if(!output){
+    alert("The match results area could not be found.");
+    return;
+  }
+
+  output.innerHTML=`
+    <div class="matchbox">
+      <div class="team-side">
+        <div class="logo" style="background:${a.color};color:${a.text}">${a.abbr}</div>
+        <h2>${a.name}</h2>
+        <span class="badge ${winner===a?'green':''}">${winner===a?'WINNER':''}</span>
+      </div>
+
+      <div>
+        <div class="score">${aw} — ${bw}</div>
+        <div class="sets">${sets.map(s=>`${s.a}-${s.b}`).join(" • ")}</div>
+      </div>
+
+      <div class="team-side">
+        <div class="logo" style="background:${b.color};color:${b.text}">${b.abbr}</div>
+        <h2>${b.name}</h2>
+        <span class="badge ${winner===b?'green':''}">${winner===b?'WINNER':''}</span>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card span6">
+        <h2>${a.name} Box Score</h2>
+        ${statsTable(statsA)}
+        ${teamBoxSummary(statsA)}
+      </div>
+
+      <div class="card span6">
+        <h2>${b.name} Box Score</h2>
+        ${statsTable(statsB)}
+        ${teamBoxSummary(statsB)}
+      </div>
+    </div>
+  `;
+
+  render();
+}
+
+function renderHistory(){
+ const el=document.getElementById("historyList");
+ if(!state.history.length){el.innerHTML="<div class='empty'>No matches played yet.</div>";return;}
+ el.innerHTML=state.history.map(m=>`<div class="result"><b>${teams[m.a].name} ${m.aw} — ${m.bw} ${teams[m.b].name}</b><br><span class="small">${m.sets.map(s=>`${s.a}-${s.b}`).join(" • ")} • ${m.date}</span></div>`).join("");
+ const rr=document.getElementById("recentResults");
+ if(rr) rr.innerHTML=state.history.slice(0,5).map(m=>`<div class="result"><b>${teams[m.a].name} ${m.aw} — ${m.bw} ${teams[m.b].name}</b><br><span class="small">${m.sets.map(s=>`${s.a}-${s.b}`).join(" • ")}</span></div>`).join("");
+}
+render();
+</script>
+
+<script>
+window.addEventListener("error", function(e){
+  const box=document.getElementById("matchOutput");
+  if(box && !box.innerHTML.trim()){
+    box.innerHTML='<div class="card" style="border:1px solid #d33"><b>Simulator error:</b> '+e.message+'</div>';
+  }
+});
+</script>
+
+</body>
+</html>
